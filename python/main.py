@@ -11,7 +11,7 @@ S = 60
 # A low number also results in input lag, as input information is processed once per frame.
 # pygame窗口显示的帧数
 # 较低的帧数会导致输入延迟，因为一帧只会处理一次输入信息
-FPS = 120
+FPS = 30
 
 
 class FrontEnd(object):
@@ -46,7 +46,7 @@ class FrontEnd(object):
         # Creat pygame window
         # 创建pygame窗口
         pygame.display.set_caption("Tello video stream")
-        self.screen = pygame.display.set_mode([960, 720])
+        self.screen = pygame.display.set_mode([1280, 800])
 
         # Init Tello object that interacts with the Tello drone
         # 初始化与Tello交互的Tello对象
@@ -107,8 +107,8 @@ class FrontEnd(object):
                 elif event.type == pygame.KEYUP:
                     self.keyup(event.key)
                     
-            axis_x = joystick.get_axis(0)
-            axis_y = joystick.get_axis(1)
+            axis_x = joystick.get_axis(2)
+            axis_y = joystick.get_axis(3)
             
             print(f"Axis X: {axis_x}, Axis Y: {axis_y}")
 
