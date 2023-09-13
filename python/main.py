@@ -111,9 +111,17 @@ class FrontEnd(object):
             axis_y = joystick.get_axis(1)
             axis_z = joystick.get_axis(4)
 
-            self.left_right_velocity = axis_x * S
+
+            if joystick.get_button(3):
+                self.tello.takeoff()
+                self.send_rc_control = True
+            elif joystick.get_button(2):
+                not self.tello.land()
+                self.send_rc_control = False
+          
+            #self.left_right_velocity = axis_x * S
             self.for_back_velocity = axis_y * S
-            self.up_down_velocity = axis_z * S
+           # self.up_down_velocity = axis_z * S
             
             print(f"Axis X: {axis_x}, Axis Y: {axis_y}")
 
@@ -195,6 +203,7 @@ class FrontEnd(object):
         elif key == pygame.K_l:  # land
             not self.tello.land()
             self.send_rc_control = False
+            
 
     def update(self):
         """ Update routine. Send velocities to Tello.
