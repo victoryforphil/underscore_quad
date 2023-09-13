@@ -107,8 +107,13 @@ class FrontEnd(object):
                 elif event.type == pygame.KEYUP:
                     self.keyup(event.key)
                     
-            axis_x = joystick.get_axis(2)
-            axis_y = joystick.get_axis(3)
+            axis_x = joystick.get_axis(0)
+            axis_y = joystick.get_axis(1)
+            axis_z = joystick.get_axis(4)
+
+            self.left_right_velocity = axis_x * S
+            self.for_back_velocity = axis_y * S
+            self.up_down_velocity = axis_z * S
             
             print(f"Axis X: {axis_x}, Axis Y: {axis_y}")
 
