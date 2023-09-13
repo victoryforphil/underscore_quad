@@ -120,7 +120,7 @@ class FrontEnd(object):
                 self.send_rc_control = False
           
             #self.left_right_velocity = axis_x * S
-            self.for_back_velocity = axis_y * S
+            self.for_back_velocity = int(axis_y * S)
            # self.up_down_velocity = axis_z * S
             
             print(f"Axis X: {axis_x}, Axis Y: {axis_y}")
