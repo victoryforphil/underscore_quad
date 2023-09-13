@@ -67,7 +67,17 @@ class FrontEnd(object):
         pygame.time.set_timer(pygame.USEREVENT + 1, 1000 // FPS)
 
     def run(self):
+        pygame.joystick.init()
+        
+        num_joysticks = pygame.joystick.get_count()
 
+        should_stop = False
+        if num_joysticks > 0:
+            joystick = pygame.joystick.Joystick(0)
+            joystick.init()
+            print(f"Using {joystick.get_name()} gamepad")
+        else:
+            print("No gamepads detected")
         self.tello.connect()
         self.tello.set_speed(self.speed)
 
@@ -77,8 +87,11 @@ class FrontEnd(object):
         self.tello.streamon()
 
         frame_read = self.tello.get_frame_read()
+        
+        # Set Fullscren
 
-        should_stop = False
+        pygame.display.toggle_fullscreen()
+
         while not should_stop:
 
             for event in pygame.event.get():
@@ -94,6 +107,10 @@ class FrontEnd(object):
                 elif event.type == pygame.KEYUP:
                     self.keyup(event.key)
                     
+            axis_x = joystick.get_axis(0)
+            axis_y = joystick.get_axis(1)
+            
+            print(f"Axis X: {axis_x}, Axis Y: {axis_y}")
 
             if frame_read.stopped:
                 break
@@ -112,6 +129,11 @@ class FrontEnd(object):
             frame = pygame.surfarray.make_surface(frame)
             self.screen.blit(frame, (0, 0))
             pygame.display.update()
+
+            # set full screen
+            # 设置全屏
+
+            
 
             time.sleep(1 / FPS)
 
