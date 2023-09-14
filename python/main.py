@@ -6,12 +6,12 @@ import time
 
 # Speed of the drone
 # 无人机的速度
-S = 60
+S = 80
 # Frames per second of the pygame window display
 # A low number also results in input lag, as input information is processed once per frame.
 # pygame窗口显示的帧数
 # 较低的帧数会导致输入延迟，因为一帧只会处理一次输入信息
-FPS = 60
+FPS = 120
 
 
 class FrontEnd(object):
@@ -58,7 +58,7 @@ class FrontEnd(object):
         self.left_right_velocity = 0
         self.up_down_velocity = 0
         self.yaw_velocity = 0
-        self.speed = 50
+        self.speed = 20
 
         self.send_rc_control = False
 
