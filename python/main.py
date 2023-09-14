@@ -120,10 +120,10 @@ class FrontEnd(object):
                 not self.tello.land()
                 self.send_rc_control = False
           
-            self.left_right_velocity = int(axis_x * S * -1)
+            self.left_right_velocity = int(axis_x * S * 1)
             self.for_back_velocity = int(axis_y * S * -1)
             self.up_down_velocity = int(axis_z * S * -1)
-            self.yaw_velocity = int(axis_r * S * -2)
+            self.yaw_velocity = int(axis_r * S * 1.5)
             
             print(f"Axis X: {axis_x}, Axis Y: {axis_y}")
 
@@ -139,19 +139,19 @@ class FrontEnd(object):
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             
             text_lr = "L/R: {}%".format(self.left_right_velocity)
-            cv2.putText(frame, text_lr, (5, 720 - 20),
+            cv2.putText(frame, text_lr, (5, 720 - 50),
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             
             text_fb = "F/B: {}%".format(self.for_back_velocity)
-            cv2.putText(frame, text_fb, (5, 720 - 35),
+            cv2.putText(frame, text_fb, (300, 720 - 5),
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             
             text_ud = "U/D: {}%".format(self.up_down_velocity)
-            cv2.putText(frame, text_ud, (5, 720 - 50),
+            cv2.putText(frame, text_ud, (300, 720 - 50),
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             
             text_yv = "Yaw: {}%".format(self.yaw_velocity)
-            cv2.putText(frame, text_yv, (5, 720 - 65),
+            cv2.putText(frame, text_yv, (500, 720 - 5),
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             
 
@@ -210,13 +210,13 @@ class FrontEnd(object):
             key：pygame事件循环中的键事件
         """
         if key == pygame.K_UP or key == pygame.K_DOWN:  # set zero forward/backward velocity
-            self.for_back_velocity = 0
+           # self.for_back_velocity = 0
         elif key == pygame.K_LEFT or key == pygame.K_RIGHT:  # set zero left/right velocity
-            self.left_right_velocity = 0
+           #self.left_right_velocity = 0
         elif key == pygame.K_w or key == pygame.K_s:  # set zero up/down velocity
-            self.up_down_velocity = 0
+           # self.up_down_velocity = 0
         elif key == pygame.K_a or key == pygame.K_d:  # set zero yaw velocity
-            self.yaw_velocity = 0
+           # self.yaw_velocity = 0
         elif key == pygame.K_t:  # takeoff
             self.tello.takeoff()
             self.send_rc_control = True
