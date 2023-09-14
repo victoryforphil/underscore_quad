@@ -50,7 +50,7 @@ class FrontEnd(object):
         # set full screen
         # 设置全屏
 
-       # pygame.display.toggle_fullscreen()
+        pygame.display.toggle_fullscreen()
 
         # Init Tello object that interacts with the Tello drone
         # 初始化与Tello交互的Tello对象
