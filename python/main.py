@@ -6,7 +6,7 @@ import time
 
 # Speed of the drone
 # 无人机的速度
-S = 80
+S = 70
 # Frames per second of the pygame window display
 # A low number also results in input lag, as input information is processed once per frame.
 # pygame窗口显示的帧数
@@ -58,7 +58,7 @@ class FrontEnd(object):
         self.left_right_velocity = 0
         self.up_down_velocity = 0
         self.yaw_velocity = 0
-        self.speed = 20
+        self.speed = 40
 
         self.send_rc_control = False
 
@@ -80,6 +80,7 @@ class FrontEnd(object):
             print("No gamepads detected")
         self.tello.connect()
         self.tello.set_speed(self.speed)
+        self.tello.set_video_resolution(Tello.RESOLUTION_720P)
 
         # In case streaming is on. This happens when we quit this program without the escape key.
         # 防止视频流已开启。这会在不使用ESC键退出的情况下发生。
@@ -111,16 +112,8 @@ class FrontEnd(object):
             axis_y = joystick.get_axis(4)
             axis_z = joystick.get_axis(1)
             axis_r = joystick.get_axis(0)
-
-
-            if joystick.get_button(3):
-                self.tello.takeoff()
-                self.send_rc_control = True
-            elif joystick.get_button(2):
-                not self.tello.land()
-                self.send_rc_control = False
           
-            self.left_right_velocity = int(axis_x * S * 1)
+            self.left_right_velocity = int(axis_x * S * 1.5)
             self.for_back_velocity = int(axis_y * S * -1)
             self.up_down_velocity = int(axis_z * S * -1)
             self.yaw_velocity = int(axis_r * S * 1.5)
@@ -136,32 +129,43 @@ class FrontEnd(object):
             # battery n. 电池
             text = "Battery: {}%".format(self.tello.get_battery())
             cv2.putText(frame, text, (5, 720 - 5),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
             
             text_lr = "L/R: {}%".format(self.left_right_velocity)
             cv2.putText(frame, text_lr, (5, 720 - 50),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
             
             text_fb = "F/B: {}%".format(self.for_back_velocity)
             cv2.putText(frame, text_fb, (300, 720 - 5),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
             
             text_ud = "U/D: {}%".format(self.up_down_velocity)
             cv2.putText(frame, text_ud, (300, 720 - 50),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
             
             text_yv = "Yaw: {}%".format(self.yaw_velocity)
             cv2.putText(frame, text_yv, (500, 720 - 5),
-                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
             
 
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame = np.rot90(frame)
             frame = np.flipud(frame)
 
+            #Resize
+            frame = cv2.resize(frame, (1280, 800)) 
+
             frame = pygame.surfarray.make_surface(frame)
             self.screen.blit(frame, (0, 0))
             pygame.display.update()
+
+            if joystick.get_button(3):
+                self.tello.takeoff()
+                self.send_rc_control = True
+            elif joystick.get_button(2):
+                not self.tello.land()
+                self.send_rc_control = False
+            
 
             # set full screen
             # 设置全屏
@@ -231,6 +235,7 @@ class FrontEnd(object):
 
             向Tello发送各方向速度信息
         """
+        
         if self.send_rc_control:
             self.tello.send_rc_control(self.left_right_velocity, self.for_back_velocity,
                 self.up_down_velocity, self.yaw_velocity)
