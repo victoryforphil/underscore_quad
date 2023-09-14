@@ -11,7 +11,7 @@ S = 60
 # A low number also results in input lag, as input information is processed once per frame.
 # pygame窗口显示的帧数
 # 较低的帧数会导致输入延迟，因为一帧只会处理一次输入信息
-FPS = 30
+FPS = 60
 
 
 class FrontEnd(object):
@@ -58,7 +58,7 @@ class FrontEnd(object):
         self.left_right_velocity = 0
         self.up_down_velocity = 0
         self.yaw_velocity = 0
-        self.speed = 10
+        self.speed = 30
 
         self.send_rc_control = False
 
@@ -90,7 +90,7 @@ class FrontEnd(object):
         
         # Set Fullscren
 
-        pygame.display.toggle_fullscreen()
+        #pygame.display.toggle_fullscreen()
 
         while not should_stop:
 
@@ -107,9 +107,10 @@ class FrontEnd(object):
                 elif event.type == pygame.KEYUP:
                     self.keyup(event.key)
                     
-            axis_x = joystick.get_axis(0)
-            axis_y = joystick.get_axis(1)
-            axis_z = joystick.get_axis(4)
+            axis_x = joystick.get_axis(3)
+            axis_y = joystick.get_axis(4)
+            axis_z = joystick.get_axis(1)
+            axis_r = joystick.get_axis(0)
 
 
             if joystick.get_button(3):
@@ -119,9 +120,10 @@ class FrontEnd(object):
                 not self.tello.land()
                 self.send_rc_control = False
           
-            #self.left_right_velocity = axis_x * S
+            self.left_right_velocity = int(axis_x * S)
             self.for_back_velocity = int(axis_y * S)
-           # self.up_down_velocity = axis_z * S
+            self.up_down_velocity = int(axis_z * S)
+            self.yaw_velocity = int(axis_r * S)
             
             print(f"Axis X: {axis_x}, Axis Y: {axis_y}")
 
