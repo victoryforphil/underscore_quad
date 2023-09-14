@@ -58,7 +58,7 @@ class FrontEnd(object):
         self.left_right_velocity = 0
         self.up_down_velocity = 0
         self.yaw_velocity = 0
-        self.speed = 30
+        self.speed = 50
 
         self.send_rc_control = False
 
@@ -120,10 +120,10 @@ class FrontEnd(object):
                 not self.tello.land()
                 self.send_rc_control = False
           
-            self.left_right_velocity = int(axis_x * S)
-            self.for_back_velocity = int(axis_y * S)
-            self.up_down_velocity = int(axis_z * S)
-            self.yaw_velocity = int(axis_r * S)
+            self.left_right_velocity = int(axis_x * S * -1)
+            self.for_back_velocity = int(axis_y * S * -1)
+            self.up_down_velocity = int(axis_z * S * -1)
+            self.yaw_velocity = int(axis_r * S * -2)
             
             print(f"Axis X: {axis_x}, Axis Y: {axis_y}")
 
