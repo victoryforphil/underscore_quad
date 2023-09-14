@@ -208,7 +208,7 @@ class FrontEnd(object):
         基于键的松开上传各个方向的速度
         参数：
             key：pygame事件循环中的键事件
-        """
+       
         if key == pygame.K_UP or key == pygame.K_DOWN:  # set zero forward/backward velocity
            # self.for_back_velocity = 0
         elif key == pygame.K_LEFT or key == pygame.K_RIGHT:  # set zero left/right velocity
@@ -217,7 +217,8 @@ class FrontEnd(object):
            # self.up_down_velocity = 0
         elif key == pygame.K_a or key == pygame.K_d:  # set zero yaw velocity
            # self.yaw_velocity = 0
-        elif key == pygame.K_t:  # takeoff
+         """
+        if key == pygame.K_t:  # takeoff
             self.tello.takeoff()
             self.send_rc_control = True
         elif key == pygame.K_l:  # land
