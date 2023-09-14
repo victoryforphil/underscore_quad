@@ -6,7 +6,7 @@ import time
 
 # Speed of the drone
 # 无人机的速度
-S = 70
+S = 100
 # Frames per second of the pygame window display
 # A low number also results in input lag, as input information is processed once per frame.
 # pygame窗口显示的帧数
@@ -58,7 +58,7 @@ class FrontEnd(object):
         self.left_right_velocity = 0
         self.up_down_velocity = 0
         self.yaw_velocity = 0
-        self.speed = 40
+        self.speed = 50
 
         self.send_rc_control = False
 
@@ -80,7 +80,7 @@ class FrontEnd(object):
             print("No gamepads detected")
         self.tello.connect()
         self.tello.set_speed(self.speed)
-        self.tello.set_video_resolution(Tello.RESOLUTION_720P)
+       # self.tello.set_video_resolution(Tello.RESOLUTION_720P)
 
         # In case streaming is on. This happens when we quit this program without the escape key.
         # 防止视频流已开启。这会在不使用ESC键退出的情况下发生。
