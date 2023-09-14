@@ -133,23 +133,23 @@ class FrontEnd(object):
             # battery n. 电池
             text = "Battery: {}%".format(self.tello.get_battery())
             cv2.putText(frame, text, (5, 720 - 5),
-                cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             
             text_lr = "L/R: {}%".format(self.left_right_velocity)
             cv2.putText(frame, text_lr, (5, 720 - 50),
-                cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             
             text_fb = "F/B: {}%".format(self.for_back_velocity)
             cv2.putText(frame, text_fb, (300, 720 - 5),
-                cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             
             text_ud = "U/D: {}%".format(self.up_down_velocity)
             cv2.putText(frame, text_ud, (300, 720 - 50),
-                cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             
             text_yv = "Yaw: {}%".format(self.yaw_velocity)
             cv2.putText(frame, text_yv, (500, 720 - 5),
-                cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             
 
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -157,7 +157,7 @@ class FrontEnd(object):
             frame = np.flipud(frame)
 
             #Resize
-            frame = cv2.resize(frame, (1280, 800)) 
+            frame = cv2.resize(frame, (800, 1280)) 
 
             frame = pygame.surfarray.make_surface(frame)
             self.screen.blit(frame, (0, 0))
