@@ -1,196 +1,271 @@
-use eframe::{egui, egui_glow, glow};
+use eframe::{egui_glow, glow};
+use egui::{CentralPanel, SidePanel};
+use openh264::formats::YUVSource;
+use openh264::formats::RGBSource;
+use log::*;
+use openh264::{decoder::{DecodedYUV, Decoder}, nal_units};
+use std::{
+    collections::HashMap,
+    sync::{
+        mpsc::{self, Receiver},
+        Arc, Mutex,
+    },
+    thread,
+    time::Duration,
+};
+use tello::*;
+use three_d::*;
+mod frame_input;
+fn with_three_d<R>(gl: &std::sync::Arc<glow::Context>, f: impl FnOnce(&mut ThreeDApp) -> R) -> R {
+    use std::cell::RefCell;
+    thread_local! {
+        pub static THREE_D: RefCell<Option<ThreeDApp>> = RefCell::new(None);
+    }
 
-use egui::mutex::Mutex;
-use std::sync::Arc;
-
-fn main() -> Result<(), eframe::Error> {
-    env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([350.0, 380.0]),
-        multisampling: 4,
-        renderer: eframe::Renderer::Glow,
-        ..Default::default()
-    };
-    eframe::run_native(
-        "Custom 3D painting in eframe using glow",
-        options,
-        Box::new(|cc| Box::new(MyApp::new(cc))),
-    )
+    THREE_D.with(|three_d| {
+        let mut three_d = three_d.borrow_mut();
+        let three_d = three_d.get_or_insert_with(|| ThreeDApp::new(gl.clone()));
+        f(three_d)
+    })
 }
-
+type ThreadedImage = Arc<Mutex<[[u8; 3]; 800 * 800]>>;
 struct MyApp {
-    /// Behind an `Arc<Mutex<…>>` so we can pass it to [`egui::PaintCallback`] and paint later.
-    rotating_triangle: Arc<Mutex<RotatingTriangle>>,
-    angle: f32,
+    pub drone_rx: mpsc::Receiver<Message>,
+    pub image: ThreadedImage,
+    pub decoder: Decoder,
 }
 
 impl MyApp {
-    fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        let gl = cc
-            .gl
-            .as_ref()
-            .expect("You need to run eframe with the glow backend");
-        Self {
-            rotating_triangle: Arc::new(Mutex::new(RotatingTriangle::new(gl))),
-            angle: 0.0,
+    fn new(rx: Receiver<Message>) -> Self {
+        Self { drone_rx: rx , image: Arc::new(Mutex::new([[0; 3]; 800 * 800])), decoder: Decoder::new().unwrap()}
+    }
+    fn custom_painting(&mut self, ui: &mut egui::Ui, image: ThreadedImage) {
+        let size = ui.available_size();
+        let (rect, _response) = ui.allocate_exact_size(size, egui::Sense::drag());
+
+        let callback = egui::PaintCallback {
+            rect,
+            callback: std::sync::Arc::new(egui_glow::CallbackFn::new(move |info, painter| {
+                with_three_d(painter.gl(), |three_d| {
+                    three_d.frame(frame_input::FrameInput::new(
+                        &three_d.context,
+                        &info,
+                        painter
+                    ),image.clone());
+                });
+            })),
+        };
+        ui.painter().add(callback);
+        
+    }
+}
+
+pub struct ThreeDApp {
+    context: Context,
+    camera: Camera,
+    image: Arc<Texture2D>,
+
+}
+
+impl ThreeDApp {
+    pub fn new(gl: std::sync::Arc<glow::Context>) -> Self {
+        let context = Context::from_gl_context(gl).unwrap();
+        // Create a camera
+        let mut camera = Camera::new_2d(Viewport::new_at_origo(800, 800));
+
+        let mut floor = Gm::new(
+            Mesh::new(&context, &CpuMesh::square()),
+            PhysicalMaterial::new_opaque(
+                &context,
+                &CpuMaterial {
+                    albedo: Srgba::new(150, 150, 150, 255),
+                    metallic: 0.1,
+                    roughness: 0.3,
+                    ..Default::default()
+                },
+            ),
+        );
+
+        floor.set_transformation(
+            Mat4::from_translation(vec3(0.0, 0.0, -5.0))
+                * Mat4::from_nonuniform_scale(10., 10.0, 0.1),
+        );
+
+        let mut tex = Texture2D::new_empty::<[u8; 3]>(
+            &context,
+            800,
+            800,
+            Interpolation::Linear,
+            Interpolation::Linear,
+            None,
+            Wrapping::ClampToEdge,
+            Wrapping::ClampToEdge,
+        );
+        let mut pixels = vec![[0; 3]; 800 * 800];
+
+        //Set pixel to green
+        for i in 0..800 {
+            for j in 0..800 {
+                pixels[i * 800 + j] = [0, 255, 0];
+            }
         }
+
+        tex.fill(&pixels);
+        Self {
+            context,
+            camera,
+            image: Arc::new(tex),
+        }
+    }
+
+    pub fn frame(&mut self, frame_input: frame_input::FrameInput, image: ThreadedImage) -> Option<glow::Framebuffer> {
+        // Ensure the viewport matches the current window viewport which changes if the window is resized
+        self.camera.set_viewport(frame_input.viewport);
+
+
+        let mut objects: Vec<&dyn Object> = vec![];
+
+        let cam_up = self.camera.up().clone();
+        let cam_pos = self.camera.position().clone();
+        let taget = Vector3::zero();
+        self.camera.set_view(cam_pos, taget, cam_up);
+        let mut texture_transform_scale = 1.0;
+        let mut texture_transform_x = 0.0;
+
+        let mut texture_transform_y = 0.0;
+       
+      
+
+        let yuv_pixels = *image.lock().unwrap();
+
+        let mut tex = Texture2D::new_empty::<[u8; 3]>(
+            &self.context,
+            800,
+            800,
+            Interpolation::Linear,
+            Interpolation::Linear,
+            None,
+            Wrapping::ClampToEdge,
+            Wrapping::ClampToEdge,
+        );
+
+        tex.fill(&yuv_pixels);
+
+ 
+        let material = ColorMaterial {
+            texture: Some(Texture2DRef {
+                texture: Arc::new(tex),
+                transformation: Mat3::from_scale(texture_transform_scale)
+                    * Mat3::from_translation(vec2(texture_transform_x, texture_transform_y)),
+            }),
+            ..Default::default()
+        };
+        
+  
+
+
+        frame_input
+            .screen
+            .clear_partially(frame_input.scissor_box, ClearState::depth(1.0));
+        frame_input
+            .screen
+            .apply_screen_material(&material, &self.camera, &[]);
+        frame_input
+            .screen
+            // Clear the color and depth of the screen render target
+            // Render the triangle with the color material which uses the per vertex colors defined at construction
+            .render_partially(
+                frame_input.scissor_box,
+                &self.camera,
+                &objects,
+                &[],
+            );
+
+        frame_input.screen.into_framebuffer() // Take back the screen fbo, we will continue to use it.
     }
 }
 
 impl eframe::App for MyApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.spacing_mut().item_spacing.x = 0.0;
-                ui.label("The triangle is being painted using ");
-                ui.hyperlink_to("glow", "https://github.com/grovesNL/glow");
-                ui.label(" (OpenGL).");
-            });
-
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        CentralPanel::default().show(ctx, |ui| {
             egui::Frame::canvas(ui.style()).show(ui, |ui| {
-                self.custom_painting(ui);
+                self.custom_painting(ui, self.image.clone());
             });
-            ui.label("Drag to rotate!");
+            ctx.request_repaint_after(Duration::from_millis(10));
+        });
+
+        SidePanel::left("Drone").show(ctx, |ui| {
+            let mut messages = vec![];
+            while let Ok(msg) = self.drone_rx.try_recv() {
+               
+                messages.push(msg);
+               
+            }
+         
+                        
+            for msg in messages {
+                match msg {
+                    Message::Frame(frame_id, data) => {
+                        
+                       // On the first few frames this may fail, so you should check the result
+                            // a few packets before giving up.
+                            let maybe_some_yuv = self.decoder.decode(data.as_slice());
+                            if let Ok(Some(yuv)) = maybe_some_yuv {
+                                let mut pixels = self.image.lock().unwrap();
+                                for i in 0..800 {
+                                    for j in 0..800 {
+                                        let y = yuv.y()[i * 800 + j];
+                                        pixels[i * 800 + j] = [y, y, y];
+                                    }
+                                }
+                                info!("Decoded frame {}", frame_id);
+                            }else{
+                                warn!("Failed to decode frame {}", frame_id);
+                            }
+                    },
+
+                    _ => {}
+                }
+            }
         });
     }
-
-    fn on_exit(&mut self, gl: Option<&glow::Context>) {
-        if let Some(gl) = gl {
-            self.rotating_triangle.lock().destroy(gl);
-        }
-    }
 }
 
-impl MyApp {
-    fn custom_painting(&mut self, ui: &mut egui::Ui) {
-        let (rect, response) =
-            ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
+fn main() {
+    env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
-        self.angle += response.drag_motion().x * 0.01;
+    let (tx, rx) = mpsc::channel();
 
-        // Clone locals so we can move them into the paint callback:
-        let angle = self.angle;
-        let rotating_triangle = self.rotating_triangle.clone();
-
-        let callback = egui::PaintCallback {
-            rect,
-            callback: std::sync::Arc::new(egui_glow::CallbackFn::new(move |_info, painter| {
-                rotating_triangle.lock().paint(painter.gl(), angle);
-            })),
-        };
-        ui.painter().add(callback);
-    }
-}
-
-
-
-struct RotatingTriangle {
-    program: glow::Program,
-    vertex_array: glow::VertexArray,
-}
-
-impl RotatingTriangle {
-    fn new(gl: &glow::Context) -> Self {
-        use glow::HasContext as _;
-
-        let shader_version = if cfg!(target_arch = "wasm32") {
-            "#version 300 es"
-        } else {
-            "#version 330"
-        };
-
-        unsafe {
-            let program = gl.create_program().expect("Cannot create program");
-
-            let (vertex_shader_source, fragment_shader_source) = (
-                r#"
-                in vec2 position;
-                in vec2 vertexTexCoord;
-                
-                out vec2 texCoord;
-                
-                void main() {
-                    gl_Position = vec4(position, 0.0, 1.0);
-                    texCoord = vertexTexCoord;
-                }
-                "#,
-                r#"
-                out vec4 FragColor;
-
-                in vec2 texCoord;
-                
-                uniform sampler2D texture0;
-                
-                void main() {
-                    FragColor = texture(texture0, texCoord);
-                }
-                "#,
-            );
-
-            let shader_sources = [
-                (glow::VERTEX_SHADER, vertex_shader_source),
-                (glow::FRAGMENT_SHADER, fragment_shader_source),
-            ];
-
-            let shaders: Vec<_> = shader_sources
-                .iter()
-                .map(|(shader_type, shader_source)| {
-                    let shader = gl
-                        .create_shader(*shader_type)
-                        .expect("Cannot create shader");
-                    gl.shader_source(shader, &format!("{shader_version}\n{shader_source}"));
-                    gl.compile_shader(shader);
-                    assert!(
-                        gl.get_shader_compile_status(shader),
-                        "Failed to compile {shader_type}: {}",
-                        gl.get_shader_info_log(shader)
-                    );
-                    gl.attach_shader(program, shader);
-                    shader
-                })
-                .collect();
-
-            gl.link_program(program);
-            assert!(
-                gl.get_program_link_status(program),
-                "{}",
-                gl.get_program_info_log(program)
-            );
-
-            for shader in shaders {
-                gl.detach_shader(program, shader);
-                gl.delete_shader(shader);
+    let drone_thread = thread::spawn(move || {
+        let mut drone = Drone::new("192.168.10.1:8889");
+        drone.connect(11111);
+        drone.set_video_mode(VideoMode::M960x720);
+        drone.start_video();
+        loop {
+            if let Some(msg) = drone.poll() {
+                tx.send(msg).unwrap();
+                drone.start_video();
             }
-
-            let vertex_array = gl
-                .create_vertex_array()
-                .expect("Cannot create vertex array");
-
-            Self {
-                program,
-                vertex_array,
-            }
+            ::std::thread::sleep(Duration::from_millis(50));
         }
-    }
+    });
+    let options = eframe::NativeOptions {
+        stencil_buffer: 8,
+        depth_buffer: 24,
 
-    fn destroy(&self, gl: &glow::Context) {
-        use glow::HasContext as _;
-        unsafe {
-            gl.delete_program(self.program);
-            gl.delete_vertex_array(self.vertex_array);
-        }
-    }
+        ..Default::default()
+    };
 
-    fn paint(&self, gl: &glow::Context, angle: f32) {
-        use glow::HasContext as _;
-        unsafe {
-            gl.use_program(Some(self.program));
-            gl.uniform_1_f32(
-                gl.get_uniform_location(self.program, "u_angle").as_ref(),
-                angle,
-            );
-            gl.bind_vertex_array(Some(self.vertex_array));
-            gl.draw_arrays(glow::TRIANGLES, 0, 3);
-        }
-    }
+    eframe::run_native(
+        "Image Viewer",
+        options,
+        Box::new(|cc| {
+            // This gives us image support:
+
+            egui_extras::install_image_loaders(&cc.egui_ctx);
+
+            Box::<MyApp>::new(MyApp::new(rx))
+        }),
+    );
+    drone_thread.join().unwrap();
 }
