@@ -1,7 +1,14 @@
 [package]
 name = "underscore_quad"
 version = "0.1.0"
+description = "Low-latency UVC camera viewer with an egui desktop interface"
 edition = "2021"
+
+[package.metadata.bundle]
+name = "underscore_quad"
+identifier = "io.github.victoryforphil.underscore-quad"
+short_description = "Low-latency UVC camera viewer"
+category = "Developer Tool"
 
 [dependencies]
 anyhow = { version = "1.0.102", features = ["backtrace"] }

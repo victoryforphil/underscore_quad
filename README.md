@@ -28,6 +28,20 @@ RUST_LOG=info cargo run
 cargo build --release
 ```
 
+## Prebuilt GUI Artifacts
+
+- GitHub Actions workflow: `GUI Artifacts`
+- macOS downloads: `underscore_quad-<target>.app.tar.gz`
+- Linux downloads: `underscore_quad-<target>.tar.gz`
+- Steam Deck target: use `underscore_quad-x86_64-unknown-linux-gnu.tar.gz`
+- ARM Arch target: use `underscore_quad-aarch64-unknown-linux-gnu.tar.gz`
+
+### Steam Deck notes
+
+- Steam Deck runs SteamOS, which is Arch-based, on `x86_64` AMD hardware.
+- The `x86_64-unknown-linux-gnu` artifact is the right build for Steam Deck.
+- Install by extracting the tarball in Desktop Mode, marking the binary executable if needed, and launching `underscore_quad`.
+
 ## Dependencies
 
 ### System (Linux)

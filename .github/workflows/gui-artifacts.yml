@@ -1,0 +1,127 @@
+name: GUI Artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gui-artifacts-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BIN_NAME: underscore_quad
+
+jobs:
+  linux:
+    name: Linux ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            label: x86_64-steamdeck
+          - target: aarch64-unknown-linux-gnu
+            label: aarch64
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build release binary
+        uses: houseabsolute/actions-rust-cross@v1
+        with:
+          command: build
+          target: ${{ matrix.target }}
+          args: --locked --release
+
+      - name: Package tarball
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_dir="${BIN_NAME}-${{ matrix.target }}"
+          mkdir -p "$package_dir"
+          cp "target/${{ matrix.target }}/release/${BIN_NAME}" "$package_dir/"
+          cp README.md "$package_dir/"
+          cp LICENSE "$package_dir/"
+          tar -czf "${package_dir}.tar.gz" "$package_dir"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gui-${{ matrix.target }}
+          path: ${{ env.BIN_NAME }}-${{ matrix.target }}.tar.gz
+          if-no-files-found: error
+
+      - name: Upload release asset
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${GITHUB_REF_NAME}" "${BIN_NAME}-${{ matrix.target }}.tar.gz" --clobber
+
+  macos:
+    name: macOS ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-13
+            target: x86_64-apple-darwin
+          - runner: macos-14
+            target: aarch64-apple-darwin
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Rust build outputs
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: macos-${{ matrix.target }}
+
+      - name: Install cargo-bundle
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-bundle
+
+      - name: Build app bundle
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "11.0"
+        run: cargo bundle --release --target "${{ matrix.target }}" --format osx --bin "${BIN_NAME}"
+
+      - name: Package app bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundle_root="target/${{ matrix.target }}/release/bundle/osx"
+          archive_name="${BIN_NAME}-${{ matrix.target }}.app.tar.gz"
+          tar -C "$bundle_root" -czf "$archive_name" "${BIN_NAME}.app"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gui-${{ matrix.target }}
+          path: ${{ env.BIN_NAME }}-${{ matrix.target }}.app.tar.gz
+          if-no-files-found: error
+
+      - name: Upload release asset
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${GITHUB_REF_NAME}" "${BIN_NAME}-${{ matrix.target }}.app.tar.gz" --clobber
