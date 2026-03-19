@@ -5,6 +5,8 @@ use super::theme;
 /// Data needed to render the top status bar.
 pub struct TopBarState {
     pub is_streaming: bool,
+    pub gamepad_active: bool,
+    pub gamepad_label: Option<String>,
     pub fps: f32,
     pub total_delay_ms: f32,
     pub width: u32,
@@ -27,6 +29,23 @@ pub fn draw(ui: &mut egui::Ui, state: &TopBarState) {
             theme::badge(ui, "LIVE", theme::GREEN);
         } else {
             theme::badge(ui, "IDLE", theme::TEXT_SECONDARY);
+        }
+
+        ui.separator();
+
+        if state.gamepad_active {
+            theme::badge(ui, "PAD", theme::ACCENT);
+        } else {
+            theme::badge(ui, "NO PAD", theme::TEXT_SECONDARY);
+        }
+
+        if let Some(label) = &state.gamepad_label {
+            ui.label(
+                RichText::new(label)
+                    .small()
+                    .monospace()
+                    .color(theme::TEXT_SECONDARY),
+            );
         }
 
         ui.separator();

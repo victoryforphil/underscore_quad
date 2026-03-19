@@ -200,6 +200,13 @@ impl eframe::App for CameraApp {
         self.consume_latest_gamepad_update();
 
         let is_streaming = self.worker.is_some() && self.fps > 0.0;
+        let gamepad_label = self.gamepad_snapshot.as_ref().map(|snapshot| {
+            format!(
+                "{}:{}",
+                snapshot.id,
+                snapshot.name.chars().take(12).collect::<String>()
+            )
+        });
 
         // -- Top bar --
         egui::TopBottomPanel::top("top_bar")
@@ -214,6 +221,8 @@ impl eframe::App for CameraApp {
                     ui,
                     &TopBarState {
                         is_streaming,
+                        gamepad_active: self.gamepad_snapshot.is_some(),
+                        gamepad_label,
                         fps: self.fps,
                         total_delay_ms: self.latency.total_ms,
                         width: self.capture.width,
