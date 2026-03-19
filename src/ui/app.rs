@@ -4,11 +4,13 @@ use egui::{Color32, RichText};
 
 use crate::camera::list_video_devices;
 use crate::cli::resolve_device;
+use crate::gamepad::{GamepadControlFrame, GamepadSnapshot, GamepadWorker, ResolvedGamepadConfig};
 use crate::Cli;
 
 use super::capture_settings::CaptureSettings;
 use super::device_picker::DevicePicker;
 use super::display_settings::DisplaySettings;
+use super::gamepad_panel::{self, GamepadPanelState};
 use super::latency::LatencyTracker;
 use super::latency_table;
 use super::status_bar::{self, StatusBarState};
@@ -25,6 +27,11 @@ pub struct CameraApp {
     latency: LatencyTracker,
     video: VideoView,
     worker: Option<CaptureWorker>,
+    gamepad_worker: Option<GamepadWorker>,
+    gamepad_snapshot: Option<GamepadSnapshot>,
+    gamepad_control: Option<GamepadControlFrame>,
+    gamepad_config_source: String,
+    gamepad_error: Option<String>,
     fps: f32,
     frame_count: u64,
     status: String,
@@ -44,10 +51,17 @@ impl CameraApp {
             latency: LatencyTracker::default(),
             video: VideoView::default(),
             worker: None,
+            gamepad_worker: None,
+            gamepad_snapshot: None,
+            gamepad_control: None,
+            gamepad_config_source: "built-in defaults".to_string(),
+            gamepad_error: None,
             fps: 0.0,
             frame_count: 0,
             status: "idle".to_string(),
         };
+
+        app.start_gamepad(cli.gamepad_config.as_deref());
 
         if let Err(err) = app.restart_capture() {
             app.status = format!("capture start failed: {err}");
@@ -89,6 +103,48 @@ impl CameraApp {
         }
     }
 
+    fn start_gamepad(&mut self, config_path: Option<&str>) {
+        self.gamepad_worker = None;
+        self.gamepad_snapshot = None;
+        self.gamepad_control = None;
+        self.gamepad_error = None;
+
+        match ResolvedGamepadConfig::from_optional_path(config_path) {
+            Ok(config) => {
+                self.gamepad_config_source = config
+                    .path
+                    .as_ref()
+                    .map(|path| path.display().to_string())
+                    .unwrap_or_else(|| "built-in defaults".to_string());
+
+                match GamepadWorker::start(config.worker) {
+                    Ok(worker) => {
+                        self.gamepad_worker = Some(worker);
+                    }
+                    Err(err) => {
+                        self.gamepad_error = Some(format!("gamepad worker failed: {err}"));
+                    }
+                }
+            }
+            Err(err) => {
+                self.gamepad_config_source = config_path.unwrap_or("built-in defaults").to_string();
+                self.gamepad_error = Some(format!("gamepad config failed: {err}"));
+            }
+        }
+    }
+
+    fn consume_latest_gamepad_update(&mut self) {
+        let update = self
+            .gamepad_worker
+            .as_ref()
+            .and_then(GamepadWorker::latest_update);
+
+        if let Some(update) = update {
+            self.gamepad_snapshot = update.active_snapshot;
+            self.gamepad_control = update.control_frame;
+        }
+    }
+
     // -- Panel drawing helpers ------------------------------------------------
 
     fn draw_controls(&mut self, ui: &mut egui::Ui) {
@@ -115,6 +171,20 @@ impl CameraApp {
                     .default_open(true)
                     .show(ui, |ui| self.display.draw(ui));
 
+                egui::CollapsingHeader::new(RichText::new("Gamepad").strong())
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        gamepad_panel::draw(
+                            ui,
+                            &GamepadPanelState {
+                                config_source: &self.gamepad_config_source,
+                                snapshot: self.gamepad_snapshot.as_ref(),
+                                control_frame: self.gamepad_control.as_ref(),
+                                error: self.gamepad_error.as_deref(),
+                            },
+                        );
+                    });
+
                 egui::CollapsingHeader::new(RichText::new("Latency").strong())
                     .default_open(true)
                     .show(ui, |ui| latency_table::draw(ui, &self.latency));
@@ -127,6 +197,7 @@ impl CameraApp {
 impl eframe::App for CameraApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.consume_latest_frame(ctx);
+        self.consume_latest_gamepad_update();
 
         let is_streaming = self.worker.is_some() && self.fps > 0.0;
 

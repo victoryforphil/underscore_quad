@@ -2,6 +2,7 @@ mod app;
 mod capture_settings;
 mod device_picker;
 mod display_settings;
+mod gamepad_panel;
 mod latency;
 mod latency_table;
 mod status_bar;

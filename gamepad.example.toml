@@ -1,0 +1,42 @@
+[collector]
+axis_deadzone = 0.10
+trigger_deadzone = 0.03
+
+[worker]
+poll_timeout_ms = 12
+
+[mapping]
+preset = "trigger-throttle-default"
+
+[mapping.roll]
+kind = "axis"
+axis = "right-stick-x"
+deadzone = 0.04
+scale = 1.0
+invert = false
+mode = "signed"
+
+[mapping.pitch]
+kind = "axis"
+axis = "right-stick-y"
+deadzone = 0.04
+scale = 1.0
+invert = true
+mode = "signed"
+
+[mapping.yaw]
+kind = "axis"
+axis = "left-stick-x"
+deadzone = 0.04
+scale = 1.0
+invert = false
+mode = "signed"
+
+[mapping.throttle]
+kind = "button-pair"
+negative = "left-trigger2"
+positive = "right-trigger2"
+deadzone = 0.03
+scale = 1.0
+invert = false
+mode = "signed"

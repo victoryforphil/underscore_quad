@@ -1,8 +1,10 @@
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 use gilrs::{Axis, Button, GamepadId};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum GamepadAxis {
     LeftStickX,
     LeftStickY,
@@ -54,7 +56,8 @@ impl GamepadAxis {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum GamepadButton {
     South,
     East,

@@ -1,24 +1,33 @@
+use serde::{Deserialize, Serialize};
+
 use crate::gamepad::types::{GamepadAxis, GamepadButton, GamepadSnapshot};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum ControlValueMode {
     Signed,
     Unsigned,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum ControlInputBinding {
     None,
-    Axis(GamepadAxis),
-    Button(GamepadButton),
+    Axis {
+        axis: GamepadAxis,
+    },
+    Button {
+        button: GamepadButton,
+    },
     ButtonPair {
         negative: GamepadButton,
         positive: GamepadButton,
     },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct ChannelBinding {
+    #[serde(flatten)]
     pub input: ControlInputBinding,
     pub invert: bool,
     pub deadzone: f32,
@@ -29,7 +38,7 @@ pub struct ChannelBinding {
 impl ChannelBinding {
     pub fn axis(axis: GamepadAxis) -> Self {
         Self {
-            input: ControlInputBinding::Axis(axis),
+            input: ControlInputBinding::Axis { axis },
             invert: false,
             deadzone: 0.0,
             scale: 1.0,
@@ -39,7 +48,7 @@ impl ChannelBinding {
 
     pub fn button(button: GamepadButton) -> Self {
         Self {
-            input: ControlInputBinding::Button(button),
+            input: ControlInputBinding::Button { button },
             invert: false,
             deadzone: 0.0,
             scale: 1.0,
@@ -60,8 +69,8 @@ impl ChannelBinding {
     pub fn sample(&self, snapshot: &GamepadSnapshot) -> f32 {
         let raw_value = match self.input {
             ControlInputBinding::None => 0.0,
-            ControlInputBinding::Axis(axis) => snapshot.axis(axis),
-            ControlInputBinding::Button(button) => snapshot.button_value(button),
+            ControlInputBinding::Axis { axis } => snapshot.axis(axis),
+            ControlInputBinding::Button { button } => snapshot.button_value(button),
             ControlInputBinding::ButtonPair { negative, positive } => {
                 snapshot.button_value(positive) - snapshot.button_value(negative)
             }
@@ -83,7 +92,7 @@ impl Default for ChannelBinding {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct GamepadControlMapping {
     pub roll: ChannelBinding,
     pub pitch: ChannelBinding,

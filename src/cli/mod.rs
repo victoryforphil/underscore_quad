@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 use anyhow::{Context, Result};
 
 use crate::camera::{list_video_devices, query_capabilities};
-use crate::gamepad::{GamepadCollector, GamepadControlMapping, GamepadEventKind};
+use crate::gamepad::{GamepadCollector, GamepadEventKind, ResolvedGamepadConfig};
 use crate::terminal_ui::{
     default_stdout_context, render_table, ActionLine, Panel, SummaryFooter, Tone,
 };
@@ -192,9 +192,10 @@ pub fn print_gamepads(verbose: bool) -> Result<()> {
     Ok(())
 }
 
-pub fn debug_gamepads(duration_secs: u64) -> Result<()> {
-    let mut collector = GamepadCollector::new()?;
-    let mapping = GamepadControlMapping::trigger_throttle_default();
+pub fn debug_gamepads(config_path: Option<&str>, duration_secs: u64) -> Result<()> {
+    let resolved_config = ResolvedGamepadConfig::from_optional_path(config_path)?;
+    let mut collector = GamepadCollector::with_options(resolved_config.collector)?;
+    let mapping = resolved_config.control_mapping;
     let duration = Duration::from_secs(duration_secs.max(1));
     let deadline = Instant::now() + duration;
 
@@ -209,6 +210,12 @@ pub fn debug_gamepads(duration_secs: u64) -> Result<()> {
         )
         .render(&default_stdout_context())
     );
+
+    if let Some(path) = &resolved_config.path {
+        println!("[CONF] using {}", path.display());
+    } else {
+        println!("[CONF] using built-in gamepad defaults");
+    }
 
     while Instant::now() < deadline {
         let events = collector.poll_blocking(Some(Duration::from_millis(250)));

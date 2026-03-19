@@ -1,9 +1,11 @@
 mod collector;
+mod config;
 mod mapping;
 mod types;
 mod worker;
 
 pub use collector::{GamepadCollector, GamepadCollectorOptions};
+pub use config::{GamepadConfig, GamepadConfigMappingPreset, ResolvedGamepadConfig};
 pub use gilrs::GamepadId;
 pub use mapping::{
     ChannelBinding, ControlInputBinding, ControlValueMode, GamepadControlFrame,

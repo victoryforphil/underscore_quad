@@ -23,6 +23,8 @@ pub struct Cli {
     gamepad_debug: bool,
     #[arg(long, default_value_t = 10)]
     gamepad_debug_seconds: u64,
+    #[arg(long, env = "UQ_GAMEPAD_CONFIG")]
+    gamepad_config: Option<String>,
     #[arg(long, default_value_t = false)]
     verbose: bool,
     #[arg(long, default_value = "auto")]
@@ -54,7 +56,7 @@ fn main() -> Result<()> {
     }
 
     if cli.gamepad_debug {
-        cli::debug_gamepads(cli.gamepad_debug_seconds)?;
+        cli::debug_gamepads(cli.gamepad_config.as_deref(), cli.gamepad_debug_seconds)?;
         return Ok(());
     }
 
