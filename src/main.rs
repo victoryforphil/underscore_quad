@@ -1,6 +1,11 @@
 mod camera;
 mod cli;
 mod fps;
+pub mod gamepad;
+mod logging;
+mod picker;
+mod terminal_ui;
+mod tui_arg_select;
 
 mod ui;
 
@@ -12,6 +17,12 @@ use clap::Parser;
 pub struct Cli {
     #[arg(long, default_value_t = false)]
     list_devices: bool,
+    #[arg(long, default_value_t = false)]
+    list_gamepads: bool,
+    #[arg(long, default_value_t = false)]
+    gamepad_debug: bool,
+    #[arg(long, default_value_t = 10)]
+    gamepad_debug_seconds: u64,
     #[arg(long, default_value_t = false)]
     verbose: bool,
     #[arg(long, default_value = "auto")]
@@ -29,11 +40,21 @@ pub struct Cli {
 }
 
 fn main() -> Result<()> {
-    pretty_env_logger::init();
+    logging::init_logger();
     let cli = Cli::parse();
 
     if cli.list_devices {
         cli::print_devices(cli.verbose)?;
+        return Ok(());
+    }
+
+    if cli.list_gamepads {
+        cli::print_gamepads(cli.verbose)?;
+        return Ok(());
+    }
+
+    if cli.gamepad_debug {
+        cli::debug_gamepads(cli.gamepad_debug_seconds)?;
         return Ok(());
     }
 
