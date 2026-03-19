@@ -6,8 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = { version = "1.0.102", features = ["backtrace"] }
 clap = { version = "4.6.0", features = ["derive", "env"] }
-font8x8 = "0.3.1"
-minifb = "0.27.0"
+eframe = "0.33.0"
 log = "0.4.28"
 pretty_env_logger = "0.5.0"
 rscam = "0.5.5"

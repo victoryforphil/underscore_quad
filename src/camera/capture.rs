@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use anyhow::{anyhow, Context, Result};
 use rscam::{Camera, Config};
 
@@ -11,6 +13,13 @@ pub struct CameraCapture {
     width: usize,
     height: usize,
     pixel_format: PixelFormat,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct CaptureTiming {
+    pub uvc_wait: Duration,
+    pub decode_and_convert: Duration,
+    pub frame_ready_at: Instant,
 }
 
 impl CameraCapture {
@@ -72,7 +81,7 @@ impl CameraCapture {
         ))
     }
 
-    pub fn capture_to_u32(&mut self, out: &mut [u32]) -> Result<()> {
+    pub fn capture_to_u32_timed(&mut self, out: &mut [u32]) -> Result<CaptureTiming> {
         let expected = self.width * self.height;
         if out.len() != expected {
             return Err(anyhow!(
@@ -81,8 +90,10 @@ impl CameraCapture {
             ));
         }
 
+        let wait_start = Instant::now();
         let frame = self.camera.capture().context("failed to capture frame")?;
-        let frame_data = frame.as_ref();
+        let after_capture = Instant::now();
+        let frame_data: &[u8] = &frame;
 
         match self.pixel_format {
             PixelFormat::Yuyv => {
@@ -153,7 +164,12 @@ impl CameraCapture {
             }
         }
 
-        Ok(())
+        let done = Instant::now();
+        Ok(CaptureTiming {
+            uvc_wait: after_capture.saturating_duration_since(wait_start),
+            decode_and_convert: done.saturating_duration_since(after_capture),
+            frame_ready_at: after_capture,
+        })
     }
 }
 
