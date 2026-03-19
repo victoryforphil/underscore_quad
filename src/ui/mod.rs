@@ -1,4 +1,13 @@
 mod app;
+mod capture_settings;
+mod device_picker;
+mod display_settings;
+mod latency;
+mod latency_table;
+mod status_bar;
+mod theme;
+mod top_bar;
+mod video_view;
 mod worker;
 
 use anyhow::Result;
