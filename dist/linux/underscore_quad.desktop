@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=underscore_quad
+Comment=Low-latency UVC camera viewer
+Exec=underscore_quad
+Terminal=false
+Categories=AudioVideo;Utility;
+StartupNotify=true

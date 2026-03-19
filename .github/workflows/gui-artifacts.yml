@@ -34,6 +34,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Install Linux build dependencies
+        run: sudo apt-get update && sudo apt-get install --yes pkg-config libudev-dev libv4l-dev
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -53,8 +56,11 @@ jobs:
           package_dir="${BIN_NAME}-${{ matrix.target }}"
           mkdir -p "$package_dir"
           cp "target/${{ matrix.target }}/release/${BIN_NAME}" "$package_dir/"
+          cp dist/linux/install-steamdeck.sh "$package_dir/"
+          cp dist/linux/underscore_quad.desktop "$package_dir/"
           cp README.md "$package_dir/"
           cp LICENSE "$package_dir/"
+          chmod +x "$package_dir/install-steamdeck.sh"
           tar -czf "${package_dir}.tar.gz" "$package_dir"
 
       - name: Upload artifact
@@ -77,9 +83,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-13
+          - runner: macos-15-intel
             target: x86_64-apple-darwin
-          - runner: macos-14
+          - runner: macos-15
             target: aarch64-apple-darwin
     steps:
       - name: Check out repository
