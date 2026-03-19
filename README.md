@@ -40,7 +40,8 @@ cargo build --release
 
 - Steam Deck runs SteamOS, which is Arch-based, on `x86_64` AMD hardware.
 - The `x86_64-unknown-linux-gnu` artifact is the right build for Steam Deck.
-- Install by extracting the tarball in Desktop Mode, marking the binary executable if needed, and launching `underscore_quad`.
+- Extract the tarball in Desktop Mode and run `./install-steamdeck.sh` to install the binary plus a desktop entry under `~/.local`.
+- The archive also includes `underscore_quad.desktop` if you want to wire up your own launcher manually.
 
 ## Dependencies
 

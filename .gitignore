@@ -11,6 +11,10 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+!dist/
+!dist/linux/
+!dist/linux/install-steamdeck.sh
+!dist/linux/underscore_quad.desktop
 downloads/
 eggs/
 .eggs/

@@ -53,8 +53,11 @@ jobs:
           package_dir="${BIN_NAME}-${{ matrix.target }}"
           mkdir -p "$package_dir"
           cp "target/${{ matrix.target }}/release/${BIN_NAME}" "$package_dir/"
+          cp dist/linux/install-steamdeck.sh "$package_dir/"
+          cp dist/linux/underscore_quad.desktop "$package_dir/"
           cp README.md "$package_dir/"
           cp LICENSE "$package_dir/"
+          chmod +x "$package_dir/install-steamdeck.sh"
           tar -czf "${package_dir}.tar.gz" "$package_dir"
 
       - name: Upload artifact
