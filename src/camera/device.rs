@@ -1,5 +1,7 @@
 use anyhow::{Context, Result};
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
 use std::fs;
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
 use std::path::Path;
 
 #[derive(Debug, Clone)]
@@ -8,6 +10,7 @@ pub struct VideoDevice {
     pub name: String,
 }
 
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
 pub fn list_video_devices() -> Result<Vec<VideoDevice>> {
     let mut devices = Vec::new();
 
@@ -31,6 +34,12 @@ pub fn list_video_devices() -> Result<Vec<VideoDevice>> {
     Ok(devices)
 }
 
+#[cfg(not(any(target_os = "linux", target_os = "freebsd")))]
+pub fn list_video_devices() -> Result<Vec<VideoDevice>> {
+    Ok(Vec::new())
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
 fn read_trimmed(path: &str) -> Result<String> {
     let value = fs::read_to_string(Path::new(path))
         .with_context(|| format!("failed to read device metadata: {path}"))?;
